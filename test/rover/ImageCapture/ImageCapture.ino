@@ -28,8 +28,6 @@ void setup() {
 }
 
 void loop() {
-  delay(3000);
-
   // Capture image in JPG format using an image resolution of one of the following: QQVGA, QVGA, VGA, HD, FHD.
   camera.takePicture(CAM_IMAGE_MODE_FHD, CAM_IMAGE_PIX_FMT_JPG);
 
@@ -64,8 +62,7 @@ void loop() {
         break;
     }
   }
-  delay(7000);
 
-  // If uncommented, only one picture will be taken.
-  // while(true);
+  // Only one picture is taken.
+  while(true);
 }
