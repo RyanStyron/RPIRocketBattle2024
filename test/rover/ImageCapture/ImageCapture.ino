@@ -1,3 +1,12 @@
+/**
+ * While this program is intended to test capturing an image from the Arducam Mega, the only
+ * output is the stream of bytes from the image. Conversion to an image file is not implemented
+ * on the Arduino, but rather by the ground station, which occurs in a separate program.
+ * 
+ * For testing, the byte stream is outputted directly to the serial monitor, but
+ * in the production version, the byte stream will be sent through the XBee radio to the ground
+ * station. 
+*/
 #include "Arducam_Mega.h"
 
 #define BUFFER_SIZE 0xff
