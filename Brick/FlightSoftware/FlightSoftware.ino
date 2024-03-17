@@ -71,7 +71,7 @@ void loop() {
 
     //berry.readAccelerometer(&accelX, &accelY, &accelZ); // read accelerion data
     //berry.readGyroscope(&gyroX, &gyroY, &gyroZ); // read rotational data
-    batteryVoltage = analogRead(voltageSensor);
+    batteryVoltage = analogRead(voltageSensor)*(11.0/430.0);
 
     xbee_radio.println(0xc8); // indicate start of normal data packet
     xbee_radio.println(0x01); // nominal status
