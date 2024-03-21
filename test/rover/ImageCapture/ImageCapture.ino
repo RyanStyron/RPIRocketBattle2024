@@ -23,7 +23,7 @@ uint8_t imageBuff[BUFFER_SIZE] = {0};
 Arducam_Mega camera(chipSelectPin);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   camera.begin();
 }
 
