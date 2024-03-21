@@ -39,8 +39,8 @@ const byte voltageSensor = A0;
 float batteryVoltage;
 
 Servo retentionServo;  // create servo object to control a servo
-const int releasedAngle = 0; // Defines the angle at which the servo releases the brick
-const int retainedAngle = 180; // Defines the angle at which the servo retains the brick
+const int releasedAngle = 10; // Defines the angle at which the servo releases the brick
+const int retainedAngle = 20; // Defines the angle at which the servo retains the brick
 bool deployed = false; // Keeps track of if the brick has been deployed
 
 byte flightMode = 0; // 0 is idle; 1 is pad + flight + landing; 2 is ejection
@@ -73,7 +73,7 @@ void loop() {
 
     while (xbee_radio.available() > 0)
         flightMode = xbee_radio.read();
-    Serial.println(flightMode);
+    //Serial.println(flightMode);
 
 
     if (flightMode == 0 || deployed) {
@@ -99,25 +99,25 @@ void loop() {
         xbee_radio.write(0xc8); // indicate start of normal data packet
         xbee_radio.write(0x01); // nominal status
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(accelX); // send accelerometer reading
+        xbee_radio.print(accelX); // send accelerometer reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(accelY); // send accelerometer reading
+        xbee_radio.print(accelY); // send accelerometer reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(accelZ); // send accelerometer reading
+        xbee_radio.print(accelZ); // send accelerometer reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(gyroX); // send gyro reading
+        xbee_radio.print(gyroX); // send gyro reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(gyroY); // send gyro reading
+        xbee_radio.print(gyroY); // send gyro reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(gyroZ); // send gyro reading
+        xbee_radio.print(gyroZ); // send gyro reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(temperature); // send temperature reading
+        xbee_radio.print(temperature); // send temperature reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(pressure); // send pressure reading
+        xbee_radio.print(pressure); // send pressure reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(batteryVoltage); // send voltage reading
+        xbee_radio.print(batteryVoltage); // send voltage reading
         xbee_radio.write(0xc9); // mark separation between values
-        xbee_radio.write(altitude); // send altitude reading
+        xbee_radio.print(altitude); // send altitude reading
         xbee_radio.write(0xca); // indicate end of normal data packet
     } else if (flightMode == 2){
         retentionServo.write(releasedAngle); // keeps servo in deployed position
