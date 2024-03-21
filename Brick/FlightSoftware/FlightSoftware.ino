@@ -1,6 +1,7 @@
 #include <SoftwareSerial.h>
 #include <Servo.h>
-// #include <BerryIMU.h>
+#include <BMP388_DEV.h>
+#include <LSM6DSLSensor.h>
 #include <Wire.h>
 #include "Arducam_Mega.h"
 
@@ -24,11 +25,15 @@ Arducam_Mega camera(chipSelectPin);
 
 int pictureDelay = 100; // Time between deployment and image capture
 
-//BerryIMU berry;
+BMP388_DEV bmp388;
+
+LSM6DSLSensor AccGyr(&Wire, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW);
+
 float accelX, accelY, accelZ;
 float gyroX, gyroY, gyroZ;
 float altitude;
 float temperature;
+float pressure;
 
 const byte voltageSensor = A0;
 float batteryVoltage;
@@ -49,9 +54,18 @@ void setup() {
     retentionServo.attach(9);  // attaches the servo on pin 9 to the servo object
     // berry.begin();
     Wire.begin();
-    Serial.write("~~Arduino Powered~~"); // Output to the serial monitor that the program has initialized.
+
+    bmp388.begin();                                 // Default initialisation, place the BMP388 into SLEEP_MODE 
+    bmp388.setTimeStandby(TIME_STANDBY_1280MS);     // Set the standby time to 1.3 seconds
+    bmp388.startNormalConversion(); 
+
+    AccGyr.begin();
+    AccGyr.Enable_X();
+    AccGyr.Enable_G();
 
     pinMode(voltageSensor, INPUT);
+
+    Serial.write("~~Arduino Powered~~"); // Output to the serial monitor that the program has initialized.
 }
 
 void loop() {
@@ -67,10 +81,19 @@ void loop() {
     } else if(flightMode == 1){
         retentionServo.write(retainedAngle); // locks servo
 
-        // berry.readAltitude(&altitude); // read altitude data
-        // berry.readTemperature(&temperature); // read temperature data
-        // berry.readAccelerometer(&accelX, &accelY, &accelZ); // read accelerion data
-        // berry.readGyroscope(&gyroX, &gyroY, &gyroZ); // read rotational data
+        bmp388.getMeasurements(temperature, pressure, altitude);
+
+        int32_t accelerometer[3];
+        int32_t gyroscope[3];
+        AccGyr.Get_X_Axes(accelerometer);
+        AccGyr.Get_G_Axes(gyroscope);
+        accelX = accelerometer[0];
+        accelY = accelerometer[1];
+        accelZ = accelerometer[2];
+        gyroX = gyroscope[0];
+        gyroY = gyroscope[1];
+        gyroZ = gyroscope[2];
+
         batteryVoltage = analogRead(voltageSensor)*(11.0/430.0);
 
         xbee_radio.write(0xc8); // indicate start of normal data packet
@@ -89,6 +112,8 @@ void loop() {
         xbee_radio.write(gyroZ); // send gyro reading
         xbee_radio.write(0xc9); // mark separation between values
         xbee_radio.write(temperature); // send temperature reading
+        xbee_radio.write(0xc9); // mark separation between values
+        xbee_radio.write(pressure); // send pressure reading
         xbee_radio.write(0xc9); // mark separation between values
         xbee_radio.write(batteryVoltage); // send voltage reading
         xbee_radio.write(0xc9); // mark separation between values
