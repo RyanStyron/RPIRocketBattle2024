@@ -33,10 +33,10 @@ Arducam_Mega camera(cameraPin);
 int pictureDelay = 100; 
 
 // BMP388 sensor object to read temperature, pressure, and altitude.
-BMP388_DEV bmp388;
+BMP388_DEV temp_press_alt_sensor;
 
 // LSM6DSL sensor object to read accelerometer and gyroscope data.
-LSM6DSLSensor AccGyr(&Wire, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW);
+LSM6DSLSensor accel_gyro_sensor(&Wire, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW);
 
 // Sensor Data
 float accelX, accelY, accelZ;
@@ -67,8 +67,8 @@ byte flightMode = 0;
  * Sets default states for the rover and its components.
 */
 void setup() {
-    // Open serial communications on the 9600 baud rate.
-    Serial.begin(9600);
+    // // Open serial communications on the 9600 baud rate.
+    // Serial.begin(9600);
 
     // Wait for the serial monitor to open.
     while (!Serial);
@@ -81,24 +81,27 @@ void setup() {
     Wire.begin();
 
     // Default initialization, places the BMP388 into SLEEP_MODE.
-    bmp388.begin(); 
+    temp_press_alt_sensor.begin(); 
     // Set the BMP388 to normal mode with a 1.28 second standby time.
-    bmp388.setTimeStandby(TIME_STANDBY_1280MS);
-    bmp388.startNormalConversion(); 
+    temp_press_alt_sensor.setTimeStandby(TIME_STANDBY_1280MS);
+    temp_press_alt_sensor.startNormalConversion(); 
 
     // Initialize the accelerometer and gyroscope.
-    AccGyr.begin();
-    AccGyr.Enable_X();
-    AccGyr.Enable_G();
+    accel_gyro_sensor.begin();
+    accel_gyro_sensor.Enable_X();
+    accel_gyro_sensor.Enable_G();
 
     // Set the voltmeter pin to input mode; necessary since the voltmeter is an analog sensor.
     pinMode(voltmeterPin, INPUT);
 
     // Print a message to the serial monitor to indicate that the 
     // Arduino is powered and all components are initialized.
-    Serial.write("======Arduino Powered======\n");
+    xbee_radio.print("======Arduino Powered======\n");
 }
 
+/**
+ * Main loop of the flight software after initialization.
+*/
 void loop() {
     // Listen for incoming data from the radio.
     xbee_radio.listen();
@@ -106,20 +109,21 @@ void loop() {
     // If there is data available, read the data and set the flight mode.
     while (xbee_radio.available() > 0)
         flightMode = xbee_radio.read();
-    Serial.println(flightMode);
 
     if (flightMode == 0 || deployed) {
+        // Set the servo to the released angle to install the rover.
         retentionServo.write(releasedAngle);
     } else if (flightMode == 1) {
+        // Set the servo to the retained angle.
         retentionServo.write(retainedAngle);
 
         // Assign the temperature, pressure, and altitude values to the sensor readings.
-        bmp388.getMeasurements(temperature, pressure, altitude);
-        
+        temp_press_alt_sensor.getMeasurements(temperature, pressure, altitude);
         int32_t accelerometer[3];
         int32_t gyroscope[3];
-        AccGyr.Get_X_Axes(accelerometer);
-        AccGyr.Get_G_Axes(gyroscope);
+        accel_gyro_sensor.Get_X_Axes(accelerometer);
+        accel_gyro_sensor.Get_G_Axes(gyroscope);
+        
         // Assign the accelerometer and gyroscope values to the sensor readings.
         accelX = accelerometer[0];
         accelY = accelerometer[1];
@@ -159,10 +163,13 @@ void loop() {
         // Indicate the end of a normal data packet.
         xbee_radio.write(0xca);
     } else if (flightMode == 2) {
+        // Delay for one second as to allow remaining data to be sent.
         delay(1000);
         
+        // Set the servo to the released angle to deploy the rover.
         retentionServo.write(releasedAngle);
 
+        // Delay the capture of an image to allow the rover to deploy.
         delay(pictureDelay);
 
         // Capture image in JPG format using an image resolution of one of the following: QQVGA, QVGA, VGA, HD, FHD.
@@ -183,25 +190,21 @@ void loop() {
                 // If the buffer is full, write the buffer to the radio.
                 if (counter >= CAMERA_BUFFER_SIZE) {
                     xbee_radio.write(imageBuff, counter);
-                    // TODO: Remove this line after testing.
-                    Serial.write(imageBuff, counter);
                     counter = 0;
                 }
             }
 
-            // Notes the start of the image byte stream.
+            // Check for the start of the image byte stream.
             if (imageData == 0xff && imageDataNext == 0xd8) {
-                    headFlag = 1;
-                    imageBuff[counter++] = imageData;
-                    imageBuff[counter++] = imageDataNext;  
+                headFlag = 1;
+                imageBuff[counter++] = imageData;
+                imageBuff[counter++] = imageDataNext;  
             }
 
-            // Notes the end of the image byte stream.
+            // Check for the end of the image byte stream.
             if (imageData == 0xff && imageDataNext == 0xd9) {
                 // Write the image data to the serial monitor.
                 xbee_radio.write(imageBuff, counter);
-                // TODO: Remove this line after testing.
-                Serial.write(imageBuff, counter);
                 counter = 0;
                 headFlag = 0;
                 flightMode = 0;
@@ -209,5 +212,6 @@ void loop() {
             }
         }
     }
+    // Delay for one second as to note overload the radio.
     delay(1000);
 }
