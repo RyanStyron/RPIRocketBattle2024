@@ -1,5 +1,4 @@
 #include <Wire.h>
-#include <Servo.h>
 #include <BMP388_DEV.h>
 #include "Arducam_Mega.h"
 #include <LSM6DSLSensor.h>
@@ -50,7 +49,7 @@ const byte voltmeterPin = A0;
 float batteryVoltage;
 
 // Controls the servo that retains the rover.
-Servo retentionServo;
+const int retentionServo = 9;
 // Angle at which the servo is set to release the rover.
 const int releasedAngle = 10;
 // Angle at which the servo retains the rover.
@@ -77,7 +76,7 @@ void setup() {
     xbee_radio.begin(9600);
     camera.begin();
     // Assigns the servo to pin 9 on the Arduino.
-    retentionServo.attach(9);
+    pinMode(retentionServo, OUTPUT);
     Wire.begin();
 
     // Default initialization, places the BMP388 into SLEEP_MODE.
@@ -112,10 +111,10 @@ void loop() {
 
     if (flightMode == 0 || deployed) {
         // Set the servo to the released angle to install the rover.
-        retentionServo.write(releasedAngle);
+        analogWrite(retentionServo, map(releasedAngle, 0, 180, 544, 2400) / 8);
     } else if (flightMode == 1) {
         // Set the servo to the retained angle.
-        retentionServo.write(retainedAngle);
+        analogWrite(retentionServo, map(retainedAngle, 0, 180, 544, 2400) / 8);
 
         // Assign the temperature, pressure, and altitude values to the sensor readings.
         temp_press_alt_sensor.getMeasurements(temperature, pressure, altitude);
@@ -167,7 +166,7 @@ void loop() {
         delay(1000);
         
         // Set the servo to the released angle to deploy the rover.
-        retentionServo.write(releasedAngle);
+        analogWrite(retentionServo, map(releasedAngle, 0, 180, 544, 2400) / 8);
 
         // Delay the capture of an image to allow the rover to deploy.
         delay(pictureDelay);
