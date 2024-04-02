@@ -39,10 +39,10 @@
  */
 
 
-// Includes.
+// Include the libraries for the sensors.
 #include <LSM6DSLSensor.h>
-
-#include <Wire.h> // Include the Wire library for I2C communication
+// Include the Wire library for I2C communication.
+#include <Wire.h>
 
 // Components.
 LSM6DSLSensor AccGyr(&Wire, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW);
