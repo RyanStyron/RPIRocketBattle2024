@@ -61,17 +61,16 @@ bool deployed = false;
 // where 0 is idle (rover retained), 1 is telemetry/sensor transmission,
 // 2 is ejection and image capture.
 byte flightMode = 0;
+// Flight mode on the previous iteration.
+byte flightModePrevious = 5;
 
 /**
  * Sets default states for the rover and its components.
 */
 void setup() {
-    // // Open serial communications on the 9600 baud rate.
-    // Serial.begin(9600);
-
     // Wait for the serial monitor to open.
     while (!Serial);
-    
+ 
     // Initialize the XBee radio to communicate with the ground station.
     xbee_radio.begin(9600);
     camera.begin();
@@ -108,6 +107,14 @@ void loop() {
     // If there is data available, read the data and set the flight mode.
     while (xbee_radio.available() > 0)
         flightMode = xbee_radio.read();
+
+    // Write to the XBee that the flight mode has changed.
+    if (flightMode != flightModePrevious) {
+        xbee_radio.print("\nFlight Mode Changed\n");
+        xbee_radio.write(flightMode);
+    }
+    // Set the previous flight mode to the current flight mode.
+    flightModePrevious = flightMode;
 
     if (flightMode == 0 || deployed) {
         // Set the servo to the released angle to install the rover.
