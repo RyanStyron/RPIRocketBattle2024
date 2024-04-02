@@ -59,8 +59,8 @@ bool deployed = false;
 
 // Mode of the flight software, set by the ground station,
 // where 0 is idle (rover retained), 1 is telemetry/sensor transmission,
-// 2 is ejection and image capture.
-byte flightMode = 0;
+// 2 is ejection and image capture. 5 is the default mode, in which nothing occurs.
+byte flightMode = 5;
 // Flight mode on the previous iteration.
 byte flightModePrevious = 5;
 
@@ -112,9 +112,9 @@ void loop() {
     if (flightMode != flightModePrevious) {
         xbee_radio.print("\nFlight Mode Changed\n");
         xbee_radio.write(flightMode);
+        // Set the previous flight mode to the current flight mode.
+        flightModePrevious = flightMode;
     }
-    // Set the previous flight mode to the current flight mode.
-    flightModePrevious = flightMode;
 
     if (flightMode == 0 || deployed) {
         // Set the servo to the released angle to install the rover.
@@ -174,6 +174,7 @@ void loop() {
         
         // Set the servo to the released angle to deploy the rover.
         analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
+        deployed = true;
 
         // Delay the capture of an image to allow the rover to deploy.
         delay(pictureDelay);
