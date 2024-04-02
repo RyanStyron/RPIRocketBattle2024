@@ -116,9 +116,14 @@ void loop() {
         flightModePrevious = flightMode;
     }
 
-    if (flightMode == 0 || deployed) {
+    if (flightMode == 0) {
         // Set the servo to the released angle to install the rover.
         analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
+
+        // If the rover has been deployed, write to the XBee
+        // that the program should be terminated.
+        if (deployed)
+            xbee_radio.print("\nEnd Program\n");
     } else if (flightMode == 1) {
         // Set the servo to the retained angle.
         analogWrite(retentionServoPin, map(retainedAngle, 0, 180, 544, 2400) / 8);
@@ -219,6 +224,6 @@ void loop() {
             }
         }
     }
-    // Delay for one second as to note overload the radio.
+    // Delay for one second as to not overload the radio.
     delay(1000);
 }
