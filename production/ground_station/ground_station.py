@@ -55,10 +55,6 @@ def retrieve_image() -> None:
     global xbee_radio
     
     try:
-        # Force the radio to mode zero then mode two for image capture.
-        xbee_radio.write(b'\x00')
-        xbee_radio.write(b'\x02')
-
         print("Parsing for Image...")
 
         # start_check represents the first bytes sent of an image in JPEG format.
@@ -93,6 +89,7 @@ def retrieve_image() -> None:
 
 if __name__ == "__main__":
     find_xbee_radio()
+    #TODO: Relocate mode setting to GUI.
     set_flight_mode(flight_modes[0])
 
     while not flight_complete:
