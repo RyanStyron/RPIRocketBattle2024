@@ -88,6 +88,8 @@ def retrieve_image() -> None:
             cv.imwrite("production/resources/RoverDeploymentImage.jpeg", img_decode)
     except Exception as err:
         print(f'Other error occurred: {err}')
+        print("\nExiting program.")
+        exit()
 
 if __name__ == "__main__":
     find_xbee_radio()
