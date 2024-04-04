@@ -54,15 +54,11 @@ const int retentionServoPin = 9;
 const int releasedAngle = 10;
 // Angle at which the servo retains the rover.
 const int retainedAngle = 20;
-// Whether or not the rover has been deployed.
-bool deployed = false;
 
 // Mode of the flight software, set by the ground station,
 // where 0 is idle (rover retained), 1 is telemetry/sensor transmission,
 // 2 is ejection and image capture. 5 is the default mode, in which nothing occurs.
 byte flightMode = 5;
-// Flight mode on the previous iteration.
-byte flightModePrevious = 5;
 
 /**
  * Sets default states for the rover and its components.
@@ -91,10 +87,6 @@ void setup() {
 
     // Set the voltmeter pin to input mode; necessary since the voltmeter is an analog sensor.
     pinMode(voltmeterPin, INPUT);
-
-    // Print a message to the serial monitor to indicate that the 
-    // Arduino is powered and all components are initialized.
-    xbee_radio.print("======Arduino Powered======\n");
 }
 
 /**
@@ -108,22 +100,9 @@ void loop() {
     while (xbee_radio.available() > 0)
         flightMode = xbee_radio.read();
 
-    // Write to the XBee that the flight mode has changed.
-    if (flightMode != flightModePrevious) {
-        xbee_radio.print("\nFlight Mode Changed\n");
-        xbee_radio.write(flightMode);
-        // Set the previous flight mode to the current flight mode.
-        flightModePrevious = flightMode;
-    }
-
     if (flightMode == 0) {
         // Set the servo to the released angle to install the rover.
         analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
-
-        // If the rover has been deployed, write to the XBee
-        // that the program should be terminated.
-        if (deployed)
-            xbee_radio.print("\nEnd Program\n");
     } else if (flightMode == 1) {
         // Set the servo to the retained angle.
         analogWrite(retentionServoPin, map(retainedAngle, 0, 180, 544, 2400) / 8);
@@ -179,7 +158,6 @@ void loop() {
         
         // Set the servo to the released angle to deploy the rover.
         analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
-        deployed = true;
 
         // Delay the capture of an image to allow the rover to deploy.
         delay(pictureDelay);
@@ -219,7 +197,8 @@ void loop() {
                 xbee_radio.write(imageBuff, counter);
                 counter = 0;
                 headFlag = 0;
-                flightMode = 0;
+                flightMode = 5;
+                xbee_radio.print("\nEnd Program\n");
                 break;
             }
         }
