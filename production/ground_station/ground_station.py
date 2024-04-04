@@ -15,13 +15,20 @@ Mode 2: Rover Deployment & Image Capture
 '''
 flight_modes = {0: b'\x00', 
                 1: b'\x01',
-                2: b'\x02' }
+                2: b'\x02',
+                5: b'\x05'}
 # Default flight mode is 5.
 flight_mode = 5
 # Serial connection to the XBee Radio.
 xbee_radio : serial.Serial
 # Whether or not the flight is complete.
 flight_complete = False
+# Telemetry data.
+telemetry_data = {"altitude": [], "accel-x": 0.0,
+                    "accel-y": 0.0, "accel-z": 0.0,
+                    "gyro-x": 0.0, "gyro-y": 0.0,
+                    "gyro-z": 0.0, "temp": 0.0,
+                    "voltage": 0.0}
 
 def find_xbee_radio() -> None:
     global xbee_radio
@@ -38,18 +45,6 @@ def find_xbee_radio() -> None:
     else:
         print("XBee Radio found.\n")
     xbee_radio = serial.Serial(xbee_radio_port, 9600)
-
-def set_flight_mode(mode: int) -> bool:
-    global flight_mode
-    
-    if mode == flight_mode:
-        return False
-    xbee_radio.write(flight_modes[mode])
-    flight_mode = mode
-    return True
-
-def plot_telemetry() -> None:
-    pass
 
 def retrieve_image() -> None:
     global xbee_radio
@@ -87,24 +82,80 @@ def retrieve_image() -> None:
         print("\nExiting program.")
         exit()
 
+def set_flight_mode(mode: int) -> bool:
+    global flight_mode
+    
+    if mode == flight_mode:
+        return False
+    xbee_radio.write(flight_modes[mode])
+    flight_mode = mode
+    return True
+
+def run_ground_station() -> None:
+    global xbee_radio
+    global flight_mode
+    global telemetry_data
+
+    def update_flight_mode_display():
+        lab_display_mode.config(text="Flight Mode " + str(flight_mode))
+        root.after(1000, update_flight_mode_display)
+    def set_mode_0():
+        set_flight_mode(0)
+    def set_mode_1():
+        set_flight_mode(1)
+    def confirm_eject():
+        if messagebox.askyesno(title="Ejection Confirmation", message="CONFIRM EJECTION"):
+            set_flight_mode(2)
+            retrieve_image()
+    def confirm_terminate():
+        if messagebox.askyesno(title="Termination Confirmation", message="CONFIRM TERMINATION"):
+            set_flight_mode(5)
+            exit()
+    def retrieve_telemetry():
+        if flight_mode != 1:
+            root.after(1000, retrieve_telemetry)
+            pass
+
+        root.after(1000, retrieve_telemetry)
+    root = tkinter.Tk()
+    root.title("Ground Station")
+    root.geometry("300x200")
+    
+    frame = Frame(root)
+    frame.pack()
+    lab_display_mode = Label(frame, text="Flight Mode " + str(flight_mode), font=("Arial", 12, "bold"))
+    update_flight_mode_display()
+    
+    lab_display_mode.pack()
+    label_select_mode = Label(frame, text="Select Flight Mode", font=("Arial", 10, "bold"), fg="red")
+    label_select_mode.pack()
+
+    button_0 = tkinter.Button(frame, text="Rover Installation (0)", command=set_mode_0)
+    button_0.pack()
+    button_1 = tkinter.Button(frame, text="Telemetry Transmission (1)", command=set_mode_1)
+    button_1.pack()
+    button_2 = tkinter.Button(frame, text="Rover Deployment & Image Capture (2)", command=confirm_eject)
+    button_2.pack()
+    button_5 = tkinter.Button(frame, text="End Program (5)", command=confirm_terminate)
+    button_5.pack()
+
+    #TODO: Implement telemetry data retrieval and plot the data.
+    retrieve_telemetry()
+
+    # plot telemetry data
+    fig = pyplot.Figure()
+    ax = fig.add_subplot(111)
+    ax.set_ylim(0, 100)
+    ax.set_xlim(0, 100)
+    ax.set_title("Altitude vs Time")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Altitude (m)")
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+    
+    root.mainloop()
+
 if __name__ == "__main__":
     find_xbee_radio()
-    #TODO: Relocate mode setting to GUI.
-    set_flight_mode(flight_modes[0])
-
-    while not flight_complete:
-        if flight_mode == 0:
-            # Delay for 1 second, then set flight mode to 1.
-            time.sleep(1)
-            set_flight_mode(flight_modes[1])
-        elif flight_mode == 1:
-            plot_telemetry()
-        elif flight_mode == 2:
-            # Delay for 1 second, then retrieve the image.
-            time.sleep(1)
-            retrieve_image()
-
-            if b'\nEnd Program\n' in xbee_radio.read_all():
-                flight_complete = True
-        else:
-            print("Invalid flight mode:", flight_mode)
+    run_ground_station()
