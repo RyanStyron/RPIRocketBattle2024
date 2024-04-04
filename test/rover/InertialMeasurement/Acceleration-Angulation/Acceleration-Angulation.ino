@@ -37,8 +37,6 @@
  *
  ******************************************************************************
  */
-
-
 // Include the libraries for the sensors.
 #include <LSM6DSLSensor.h>
 // Include the Wire library for I2C communication.
