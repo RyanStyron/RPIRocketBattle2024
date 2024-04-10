@@ -36,7 +36,7 @@ def find_xbee_radio() -> None:
     ports = serial.tools.list_ports.comports()
     
     for port in ports:
-        if 'USB Serial Port' in port.description:
+        if 'USB Serial Port' in port.description or 'USB UART' in port.description:
             xbee_radio_port = port.device
             break
     if xbee_radio_port is None:
