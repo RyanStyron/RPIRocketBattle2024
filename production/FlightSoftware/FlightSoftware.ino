@@ -72,6 +72,8 @@ void setup() {
     camera.begin();
     // Set the rentention servo pin to output mode.
     pinMode(retentionServoPin, OUTPUT);
+    analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
+
     Wire.begin();
 
     // Default initialization, places the BMP388 into SLEEP_MODE.
@@ -102,7 +104,7 @@ void loop() {
 
     if (flightMode == 0) {
         // Set the servo to the released angle to install the rover.
-        analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
+        analogWrite(retentionServoPin, map(retainedAngle, 0, 180, 544, 2400) / 8);
     } else if (flightMode == 1) {
         // Set the servo to the retained angle.
         analogWrite(retentionServoPin, map(retainedAngle, 0, 180, 544, 2400) / 8);
