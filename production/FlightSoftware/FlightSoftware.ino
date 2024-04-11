@@ -29,7 +29,7 @@ uint8_t imageBuff[CAMERA_BUFFER_SIZE] = {0};
 Arducam_Mega camera(cameraPin);
 
 // Time in milliseconds between the request and capture of an image.
-int pictureDelay = 100; 
+int pictureDelay = 250; 
 
 // BMP388 sensor object to read temperature, pressure, and altitude.
 BMP388_DEV temp_press_alt_sensor;
@@ -53,7 +53,7 @@ const int retentionServoPin = 9;
 // Angle at which the servo is set to release the rover.
 const int releasedAngle = 10;
 // Angle at which the servo retains the rover.
-const int retainedAngle = 20;
+const int retainedAngle = 100;
 
 // Mode of the flight software, set by the ground station,
 // where 0 is idle (rover retained), 1 is telemetry/sensor transmission,
