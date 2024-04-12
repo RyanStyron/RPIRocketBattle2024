@@ -59,7 +59,7 @@ class TelemetryReceiver(threading.Thread):
             xbee_radio.read_until(telemetry_start_bytes)
 
             # Read until the end_check bytes are found.
-            data = telemetry_start_bytes + xbee_radio.read_until(telemetry_end_bytes)
+            data = xbee_radio.read_until(telemetry_end_bytes)
 
             # TODO: Implement parsing of telemetry data. 
             self.telemetry_received = True
@@ -220,6 +220,9 @@ def run_ground_station() -> None:
             root.after(1000, request_telemetry)
             pass
         retrieve_telemetry()
+        graph_altitude_axes.clear()
+        graph_altitude_axes.plot(telemetry_data["altitude"])
+        graph_altitude_canvas.draw()
         root.after(1000, request_telemetry)
     root = tkinter.Tk()
     root.title("Ground Station")
