@@ -98,20 +98,20 @@ def run_ground_station() -> None:
         label_display_mode.config(text="Flight Mode " + str(flight_mode))
         root.after(1000, update_flight_mode_display)
     def update_acceleration_display() -> None:
-        label_accel.config(text="Accel-X: " + str(telemetry_data["accel-x"]) \
-            + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
-            + ", Accel-Z: " + str(telemetry_data["accel-z"]) + " (m/s^2)")
+        label_accel.config(text="Accel-X: " + str(telemetry_data["accel-x"][-1]) \
+            + ", Accel-Y: " + str(telemetry_data["accel-y"][-1]) \
+            + ", Accel-Z: " + str(telemetry_data["accel-z"][-1]) + " (m/s^2)")
         root.after(1000, update_acceleration_display)
     def update_gyro_display() -> None:
-        label_gyro.config(text="Gyro-X: " + str(telemetry_data["gyro-x"]) \
-            + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
-            + ", Gyro-Z: " + str(telemetry_data["gyro-z"]) + " (deg/s)")
+        label_gyro.config(text="Gyro-X: " + str(telemetry_data["gyro-x"][-1]) \
+            + ", Gyro-Y: " + str(telemetry_data["gyro-y"][-1]) \
+            + ", Gyro-Z: " + str(telemetry_data["gyro-z"][-1]) + " (deg/s)")
         root.after(1000, update_gyro_display)
     def update_temperature_display() -> None:
-        label_temperature.config(text="Temp (C): " + str(telemetry_data["temperature"]))
+        label_temperature.config(text="Temp (C): " + str(telemetry_data["temperature"][-1]))
         root.after(1000, update_temperature_display)
     def update_voltage_display() -> None:
-        label_voltage.config(text="Voltage (V): " + str(telemetry_data["voltage"]))
+        label_voltage.config(text="Voltage (V): " + str(telemetry_data["voltage"][-1]))
         root.after(1000, update_voltage_display)
     def confirm_eject() -> None:
         if messagebox.askyesno(title="Ejection Confirmation", message="CONFIRM EJECTION"):
@@ -165,17 +165,13 @@ def run_ground_station() -> None:
     # to the right of the plot, display the non-altitude telemetry data
     label_telemetry = Label(frame, text="Telemetry Data", font=("Arial", 10, "bold"), fg="red")
     label_telemetry.pack()
-    label_accel = Label(frame, text="Accel-X: " + str(telemetry_data["accel-x"]) \
-        + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
-        + ", Accel-Z: " + str(telemetry_data["accel-z"]) + " (m/s^2)")
+    label_accel = Label(frame, text="Accel-X, Accel-Y, Accel-Z (m/s^2)")
     label_accel.pack()
-    label_gyro = Label(frame, text="Gyro-X: " + str(telemetry_data["gyro-x"]) \
-        + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
-        + ", Gyro-Z: " + str(telemetry_data["gyro-z"]) + " (deg/s)")
+    label_gyro = Label(frame, text="Gyro-X, Gyro-Y, Gyro-Z (deg/s)")
     label_gyro.pack()
-    label_temperature = Label(frame, text="Temp (C): " + str(telemetry_data["temperature"]))
+    label_temperature = Label(frame, text="Temp (C)")
     label_temperature.pack()
-    label_voltage = Label(frame, text="Voltage (V): " + str(telemetry_data["voltage"]))
+    label_voltage = Label(frame, text="Voltage (V)")
     label_voltage.pack()
 
     request_telemetry()
