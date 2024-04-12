@@ -102,8 +102,11 @@ void loop() {
     while (xbee_radio.available() > 0)
         flightMode = xbee_radio.read();
 
-    if (flightMode == 0) {
+    if (flightMode == 5) {
         // Set the servo to the released angle to install the rover.
+        analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
+    } else if (flightMode == 0) {
+        // Set the servo to the retained angle as the rover should be installed in mode 5.
         analogWrite(retentionServoPin, map(retainedAngle, 0, 180, 544, 2400) / 8);
     } else if (flightMode == 1) {
         // Set the servo to the retained angle.
@@ -128,32 +131,30 @@ void loop() {
         batteryVoltage = analogRead(voltmeterPin) * (11.0 / 430.0);
 
         // Indicate the start of a normal data packet.
-        xbee_radio.write(0xc8);
-        // Nominal status.
-        xbee_radio.write(0x01);
+        xbee_radio.print("DBEGIN")
         // Mark separation between values.
-        xbee_radio.write(0xc9);
+        xbee_radio.print("ACCELX");
         xbee_radio.print(accelX);
-        xbee_radio.write(0xc9); 
-        xbee_radio.print(accelY); 
-        xbee_radio.write(0xc9);
+        xbee_radio.print("ACCELY");
+        xbee_radio.print(accelY);
+        xbee_radio.print("ACCELZ"); 
         xbee_radio.print(accelZ);
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("GYROX");
         xbee_radio.print(gyroX);
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("GYROY");
         xbee_radio.print(gyroY);
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("GYROZ");
         xbee_radio.print(gyroZ);
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("TEMP");
         xbee_radio.print(temperature); 
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("PRESS");
         xbee_radio.print(pressure); 
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("VOLT");
         xbee_radio.print(batteryVoltage); 
-        xbee_radio.write(0xc9); 
+        xbee_radio.print("ALT");
         xbee_radio.print(altitude);
         // Indicate the end of a normal data packet.
-        xbee_radio.write(0xca);
+        xbee_radio.print("DEND");
     } else if (flightMode == 2) {
         // Delay for one second as to allow remaining data to be sent.
         delay(1000);
@@ -200,7 +201,7 @@ void loop() {
                 counter = 0;
                 headFlag = 0;
                 flightMode = 5;
-                xbee_radio.print("\nEnd Program\n");
+                xbee_radio.print("\nImage Taken. End Program\n");
                 break;
             }
         }
