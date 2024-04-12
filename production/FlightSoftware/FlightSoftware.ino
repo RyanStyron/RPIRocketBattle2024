@@ -40,9 +40,7 @@ LSM6DSLSensor accel_gyro_sensor(&Wire, LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW);
 // Sensor Data
 float accelX, accelY, accelZ;
 float gyroX, gyroY, gyroZ;
-float altitude;
-float temperature;
-float pressure;
+float temperature, pressure, altitude;
 
 // Voltage sensor pin.
 const byte voltmeterPin = A0;
@@ -147,8 +145,6 @@ void loop() {
         xbee_radio.print(gyroZ);
         xbee_radio.print("TEMP");
         xbee_radio.print(temperature); 
-        xbee_radio.print("PRESS");
-        xbee_radio.print(pressure); 
         xbee_radio.print("VOLT");
         xbee_radio.print(batteryVoltage); 
         xbee_radio.print("ALT");

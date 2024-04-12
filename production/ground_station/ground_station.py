@@ -94,40 +94,36 @@ def run_ground_station() -> None:
     global flight_mode
     global telemetry_data
 
-    def update_flight_mode_display():
+    def update_flight_mode_display() -> None:
         label_display_mode.config(text="Flight Mode " + str(flight_mode))
         root.after(1000, update_flight_mode_display)
-    def update_acceleration_display():
+    def update_acceleration_display() -> None:
         label_accel.config(text="Accel-X: " + str(telemetry_data["accel-x"]) \
-                            + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
-                            + ", Accel-Z: " + str(telemetry_data["accel-z"]))
+            + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
+            + ", Accel-Z: " + str(telemetry_data["accel-z"]) + " (m/s^2)")
         root.after(1000, update_acceleration_display)
-    def update_gyro_display():
+    def update_gyro_display() -> None:
         label_gyro.config(text="Gyro-X: " + str(telemetry_data["gyro-x"]) \
-                            + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
-                            + ", Gyro-Z: " + str(telemetry_data["gyro-z"]))
+            + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
+            + ", Gyro-Z: " + str(telemetry_data["gyro-z"]) + " (deg/s)")
         root.after(1000, update_gyro_display)
-    def update_temperature_display():
+    def update_temperature_display() -> None:
         label_temperature.config(text="Temp (C): " + str(telemetry_data["temperature"]))
         root.after(1000, update_temperature_display)
-    def update_voltage_display():
-        label_voltage.config(text="Voltage: " + str(telemetry_data["voltage"]))
+    def update_voltage_display() -> None:
+        label_voltage.config(text="Voltage (V): " + str(telemetry_data["voltage"]))
         root.after(1000, update_voltage_display)
-    def set_mode_0():
-        set_flight_mode(0)
-    def set_mode_1():
-        set_flight_mode(1)
-    def confirm_eject():
+    def confirm_eject() -> None:
         if messagebox.askyesno(title="Ejection Confirmation", message="CONFIRM EJECTION"):
             set_flight_mode(2)
             retrieve_image()
-    def confirm_terminate():
+    def confirm_terminate() -> None:
         if messagebox.askyesno(title="Termination Confirmation", message="CONFIRM TERMINATION"):
             set_flight_mode(5)
             store_telemetry_data()
             print("Telemetry stored.\nExiting program.")
             exit()
-    def request_telemetry():
+    def request_telemetry() -> None:
         if flight_mode != 1:
             root.after(1000, request_telemetry)
             pass
@@ -145,14 +141,14 @@ def run_ground_station() -> None:
     label_select_mode = Label(frame, text="Select Flight Mode", font=("Arial", 10, "bold"), fg="red")
     label_select_mode.pack()
 
-    button_0 = tkinter.Button(frame, text="Rover Installation (0)", command=set_mode_0)
-    button_0.pack()
-    button_1 = tkinter.Button(frame, text="Telemetry Transmission (1)", command=set_mode_1)
-    button_1.pack()
-    button_2 = tkinter.Button(frame, text="Rover Deployment & Image Capture (2)", command=confirm_eject)
-    button_2.pack()
-    button_5 = tkinter.Button(frame, text="End Program (5)", command=confirm_terminate)
-    button_5.pack()
+    button_mode_0 = tkinter.Button(frame, text="Rover Installation (0)", command=set_flight_mode(0))
+    button_mode_0.pack()
+    button_mode_1 = tkinter.Button(frame, text="Telemetry Transmission (1)", command=set_flight_mode(1))
+    button_mode_1.pack()
+    button_mode_2 = tkinter.Button(frame, text="Rover Deployment & Image Capture (2)", command=confirm_eject)
+    button_mode_2.pack()
+    button_mode_5 = tkinter.Button(frame, text="End Program (5)", command=confirm_terminate)
+    button_mode_5.pack()
 
     graph_altitude = pyplot.Figure()
     graph_altitude_axes = graph_altitude.add_subplot(111)
@@ -162,24 +158,24 @@ def run_ground_station() -> None:
     graph_altitude_axes.set_xlabel("Time (sec)")
     graph_altitude_axes.set_ylabel("Altitude (m)")
     
-    canvas = FigureCanvasTkAgg(graph_altitude, master=root)
-    canvas.draw()
-    canvas.get_tk_widget().pack()
+    graph_altitude_canvas = FigureCanvasTkAgg(graph_altitude, master=root)
+    graph_altitude_canvas.draw()
+    graph_altitude_canvas.get_tk_widget().pack()
 
     # to the right of the plot, display the non-altitude telemetry data
     label_telemetry = Label(frame, text="Telemetry Data", font=("Arial", 10, "bold"), fg="red")
     label_telemetry.pack()
     label_accel = Label(frame, text="Accel-X: " + str(telemetry_data["accel-x"]) \
-                        + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
-                        + ", Accel-Z: " + str(telemetry_data["accel-z"]))
+        + ", Accel-Y: " + str(telemetry_data["accel-y"]) \
+        + ", Accel-Z: " + str(telemetry_data["accel-z"]) + " (m/s^2)")
     label_accel.pack()
     label_gyro = Label(frame, text="Gyro-X: " + str(telemetry_data["gyro-x"]) \
-                        + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
-                        + ", Gyro-Z: " + str(telemetry_data["gyro-z"]))
+        + ", Gyro-Y: " + str(telemetry_data["gyro-y"]) \
+        + ", Gyro-Z: " + str(telemetry_data["gyro-z"]) + " (deg/s)")
     label_gyro.pack()
     label_temperature = Label(frame, text="Temp (C): " + str(telemetry_data["temperature"]))
     label_temperature.pack()
-    label_voltage = Label(frame, text="Voltage: " + str(telemetry_data["voltage"]))
+    label_voltage = Label(frame, text="Voltage (V): " + str(telemetry_data["voltage"]))
     label_voltage.pack()
 
     request_telemetry()
