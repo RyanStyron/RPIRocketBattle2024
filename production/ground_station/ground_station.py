@@ -89,7 +89,12 @@ def find_xbee_radio() -> None:
 
 def set_flight_mode(mode: int) -> bool:
     global flight_mode
+    global processing_image
     
+    # If an image is being processed, do not change the flight mode.
+    # Upon completion of the image processing, the flight mode will be set to 5.
+    if processing_image:
+        return False
     if mode == flight_mode:
         return False
     xbee_radio.write(flight_modes[mode])
@@ -122,6 +127,8 @@ def retrieve_image() -> None:
             cv.imshow("Rover Deployment Image", img_decode)
             # Save the image.
             cv.imwrite("production/resources/RoverDeploymentImage.jpeg", img_decode)
+        # Set the flight mode to 5 to signal the end of the image processing.
+        set_flight_mode(5)
         processing_image = False
 
 def run_ground_station() -> None:
@@ -235,5 +242,4 @@ if __name__ == "__main__":
     # Will only be reached if the user ends the program without properly terminating.
     store_telemetry_data()
     print("Improperly terminated.\nTelemetry stored.\nExiting program.")
-    root.quit()
     exit()
