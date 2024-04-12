@@ -26,12 +26,49 @@ xbee_radio : serial.Serial
 root : tkinter.Tk
 # Flag to prevent multiple image processing threads.
 processing_image = False
+# Flag to prevent multiple concurrent telemetry processing threads.
+processing_telemetry = False
 # Telemetry data.
 telemetry_data = {"altitude": [], "accel-x": [],
                     "accel-y": [], "accel-z": [],
                     "gyro-x": [], "gyro-y": [],
                     "gyro-z": [], "temperature": [],
                     "voltage": []}
+
+class TelemetryReceiver(threading.Thread):
+    global root
+    global xbee_radio
+    global telemetry_data
+
+    def __init__(self) -> None:
+        self.telemetry_received = False
+        # Daemon thread to prevent the program from waiting for the thread to finish.
+        super().__init__(daemon=True)
+
+    def run(self) -> None:
+        try:
+            print("Parsing for Telemetry...")
+
+            # First bytes sent of a telemetry packet.
+            telemetry_start_bytes = b'DBEGIN'
+            # Last bytes sent of a telemetry packet.
+            telemetry_end_bytes = b'DEND'
+
+            # Read until the start_check bytes are found.
+            # These bytes are not part of the telemetry data and are discarded.
+            xbee_radio.read_until(telemetry_start_bytes)
+
+            # Read until the end_check bytes are found.
+            data = telemetry_start_bytes + xbee_radio.read_until(telemetry_end_bytes)
+
+            # TODO: Implement parsing of telemetry data. 
+            self.telemetry_received = True
+        except Exception as err:
+            store_telemetry_data()
+            print(f'Error occurred in telemetry retrieval: {err}')
+            print("Telemetry stored.\nExiting program.")
+            root.quit()
+            exit()
 
 class ImageReceiver(threading.Thread):
     global root
@@ -65,7 +102,7 @@ class ImageReceiver(threading.Thread):
             self.image_received = True
         except Exception as err:
             store_telemetry_data()
-            print(f'Other error occurred: {err}')
+            print(f'Error occurred in image retrieval: {err}')
             print("Telemetry stored.\nExiting program.")
             root.quit()
             exit()
@@ -102,7 +139,17 @@ def set_flight_mode(mode: int) -> bool:
     return True
 
 def retrieve_telemetry() -> None:
-    pass
+    global root
+    global processing_telemetry
+
+    if not processing_telemetry:
+        processing_telemetry = True
+        telemetry_receiver = TelemetryReceiver()
+        telemetry_receiver.start()
+
+        while not telemetry_receiver.telemetry_received:
+            root.update()
+        processing_telemetry = False
 
 def retrieve_image() -> None:
     global root
@@ -207,7 +254,6 @@ def run_ground_station() -> None:
     graph_altitude_canvas.draw()
     graph_altitude_canvas.get_tk_widget().pack()
 
-    # to the right of the plot, display the non-altitude telemetry data
     label_telemetry = Label(frame, text="Telemetry Data", font=("Arial", 10, "bold"), fg="red")
     label_telemetry.pack()
     label_accel = Label(frame, text="Accel-X, Accel-Y, Accel-Z (m/s^2)")
