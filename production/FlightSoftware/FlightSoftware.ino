@@ -131,7 +131,7 @@ void loop() {
         batteryVoltage = analogRead(voltmeterPin) * (11.0 / 430.0);
 
         // Indicate the start of a normal data packet.
-        xbee_radio.print("DBEGIN")
+        xbee_radio.print("DBEGIN");
         // Mark separation between values.
         xbee_radio.print("ACCELX");
         xbee_radio.print(accelX);

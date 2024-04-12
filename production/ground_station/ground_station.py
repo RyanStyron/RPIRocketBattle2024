@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 Mode 0: Rover Installation
 Mode 1: Telemetry Transmission
 Mode 2: Rover Deployment & Image Capture
+Mode 5: Default/Terminate Program
 '''
 flight_modes = {0: b'\x00', 
                 1: b'\x01',
@@ -53,7 +54,7 @@ def set_flight_mode(mode: int) -> bool:
     flight_mode = mode
     return True
 
-def retrieve_telemtry():
+def retrieve_telemetry() -> None:
     pass
 
 def retrieve_image() -> None:
@@ -130,7 +131,7 @@ def run_ground_station() -> None:
         if flight_mode != 1:
             root.after(1000, request_telemetry)
             pass
-        # retrieve_telemetry()
+        retrieve_telemetry()
         root.after(1000, request_telemetry)
     root = tkinter.Tk()
     root.title("Ground Station")
@@ -153,19 +154,15 @@ def run_ground_station() -> None:
     button_5 = tkinter.Button(frame, text="End Program (5)", command=confirm_terminate)
     button_5.pack()
 
-    #TODO: Implement telemetry data retrieval and plot the data.
-    request_telemetry()
-
-    # plot telemetry data
-    fig = pyplot.Figure()
-    ax = fig.add_subplot(111)
-    ax.set_ylim(0, 1500)
-    ax.set_xlim(0, 100)
-    ax.set_title("Altitude vs Time")
-    ax.set_xlabel("Time (sec)")
-    ax.set_ylabel("Altitude (m)")
+    graph_altitude = pyplot.Figure()
+    graph_altitude_axes = graph_altitude.add_subplot(111)
+    graph_altitude_axes.set_ylim(0, 1500)
+    graph_altitude_axes.set_xlim(0, 100)
+    graph_altitude_axes.set_title("Altitude vs Time")
+    graph_altitude_axes.set_xlabel("Time (sec)")
+    graph_altitude_axes.set_ylabel("Altitude (m)")
     
-    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas = FigureCanvasTkAgg(graph_altitude, master=root)
     canvas.draw()
     canvas.get_tk_widget().pack()
 
@@ -185,6 +182,7 @@ def run_ground_station() -> None:
     label_voltage = Label(frame, text="Voltage: " + str(telemetry_data["voltage"]))
     label_voltage.pack()
 
+    request_telemetry()
     update_flight_mode_display()
     update_acceleration_display()
     update_gyro_display()
@@ -206,5 +204,5 @@ if __name__ == "__main__":
     run_ground_station()
     # Will only be reached if the user ends the program without properly terminating.
     store_telemetry_data()
-    print("Telemetry stored.\nExiting program.")
+    print("Improperly terminated.\nTelemetry stored.\nExiting program.")
     exit()
