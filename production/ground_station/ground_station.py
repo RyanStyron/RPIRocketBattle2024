@@ -1,6 +1,7 @@
 import numpy
 import serial
 import tkinter
+import threading
 import cv2 as cv
 import serial.tools.list_ports
 import matplotlib.pyplot as pyplot
@@ -21,12 +22,53 @@ flight_modes = {0: b'\x00',
 flight_mode = 5
 # Serial connection to the XBee Radio.
 xbee_radio : serial.Serial
+# Ground station GUI root.
+root : tkinter.Tk
+# Flag to prevent multiple image processing threads.
+processing_image = False
 # Telemetry data.
 telemetry_data = {"altitude": [], "accel-x": [],
                     "accel-y": [], "accel-z": [],
                     "gyro-x": [], "gyro-y": [],
                     "gyro-z": [], "temperature": [],
                     "voltage": []}
+
+class ImageReceiver(threading.Thread):
+    global root
+    global xbee_radio
+
+    def __init__(self) -> None:
+        self.image_received = False
+        self.image_data = None
+        # Daemon thread to prevent the program from waiting for the thread to finish.
+        super().__init__(daemon=True)
+
+    def run(self) -> None:
+        try:
+            print("Parsing for Image...")
+
+            # First bytes sent of an image in JPEG format.
+            image_start_bytes = b'\xff\xd8'
+            # Last bytes sent of an image in JPEG format.
+            image_end_bytes = b'\xff\xd9'
+
+            # Read until the start_check bytes are found.
+            # These bytes are not part of the image data and are discarded.
+            image_preceding_bytes = xbee_radio.read_until(image_start_bytes)
+
+            print("Received start:", image_preceding_bytes)
+            # Read until the end_check bytes are found.
+            data = image_start_bytes + xbee_radio.read_until(image_end_bytes)
+
+            # Decode the data into a byte array, then an numpy array object.
+            self.image_data = numpy.asarray(bytearray(data), dtype="uint8")
+            self.image_received = True
+        except Exception as err:
+            store_telemetry_data()
+            print(f'Other error occurred: {err}')
+            print("Telemetry stored.\nExiting program.")
+            root.quit()
+            exit()
 
 def find_xbee_radio() -> None:
     global xbee_radio
@@ -58,38 +100,32 @@ def retrieve_telemetry() -> None:
     pass
 
 def retrieve_image() -> None:
+    global root
     global xbee_radio
-    
-    try:
-        print("Parsing for Image...")
+    global processing_image
 
-        # start_check represents the first bytes sent of an image in JPEG format.
-        # Read and clear everything sent leading up to that.
-        start_check = b'\xff\xd8' 
-        # end_check represents the last bytes sent of an image in JPEG format.
-        end_check = b'\xff\xd9'
+    # Prevent multiple image processing threads.
+    if not processing_image:
+        # Set the flight mode to 2 to signal the rover to deploy and capture an image.
+        set_flight_mode(2)
+        processing_image = True
+        image_receiver = ImageReceiver()
+        image_receiver.start()
 
-        # Read until the start_check bytes are found.
-        temp = xbee_radio.read_until(start_check)
-        
-        print("Received start:", temp)
-        # Read until the end_check bytes are found.
-        data = start_check + xbee_radio.read_until(end_check)
+        while not image_receiver.image_received:
+            root.update()
 
-        # Decode the data into a byte array, then an numpy array object.
-        image = numpy.asarray(bytearray(data), dtype="uint8")
-        # Send the numpy array object to an OpenCV Mat object.
-        img_decode = cv.imdecode(image, cv.IMREAD_COLOR)
-        # Display the image.
-        cv.imshow("Rover Deployment Image", img_decode)
-        # Save the image.
-        cv.imwrite("production/resources/RoverDeploymentImage.jpeg", img_decode)
-    except Exception as err:
-        print(f'Other error occurred: {err}')
-        print("\nExiting program.")
-        exit()
+        if image_receiver.image_data is not None:
+            # Send the numpy array object to an OpenCV Mat object.
+            img_decode = cv.imdecode(image_receiver.image_data, cv.IMREAD_COLOR)
+            # Display the image.
+            cv.imshow("Rover Deployment Image", img_decode)
+            # Save the image.
+            cv.imwrite("production/resources/RoverDeploymentImage.jpeg", img_decode)
+        processing_image = False
 
 def run_ground_station() -> None:
+    global root
     global xbee_radio
     global flight_mode
     global telemetry_data
@@ -115,13 +151,15 @@ def run_ground_station() -> None:
         root.after(1000, update_voltage_display)
     def confirm_eject() -> None:
         if messagebox.askyesno(title="Ejection Confirmation", message="CONFIRM EJECTION"):
-            set_flight_mode(2)
+            # Set the flight mode to 2 to signal the rover to deploy
+            # and capture an image (both handled by retrieve_image).
             retrieve_image()
     def confirm_terminate() -> None:
         if messagebox.askyesno(title="Termination Confirmation", message="CONFIRM TERMINATION"):
             set_flight_mode(5)
             store_telemetry_data()
             print("Telemetry stored.\nExiting program.")
+            root.quit()
             exit()
     def request_telemetry() -> None:
         if flight_mode != 1:
@@ -197,4 +235,5 @@ if __name__ == "__main__":
     # Will only be reached if the user ends the program without properly terminating.
     store_telemetry_data()
     print("Improperly terminated.\nTelemetry stored.\nExiting program.")
+    root.quit()
     exit()
