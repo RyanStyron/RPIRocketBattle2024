@@ -29,11 +29,11 @@ processing_image = False
 # Flag to prevent multiple concurrent telemetry processing threads.
 processing_telemetry = False
 # Telemetry data.
-telemetry_data = {"altitude": [], "accel-x": [],
-                    "accel-y": [], "accel-z": [],
-                    "gyro-x": [], "gyro-y": [],
-                    "gyro-z": [], "temperature": [],
-                    "voltage": []}
+telemetry_data = {"altitude": [0.0], "accel-x": [0.0],
+                    "accel-y": [0.0], "accel-z": [0.0],
+                    "gyro-x": [0.0], "gyro-y": [0.0],
+                    "gyro-z": [0.0], "temperature": [0.0],
+                    "voltage": [0.0]}
 
 class TelemetryReceiver(threading.Thread):
     global root
@@ -60,8 +60,29 @@ class TelemetryReceiver(threading.Thread):
 
             # Read until the end_check bytes are found.
             data = xbee_radio.read_until(telemetry_end_bytes)
+            print("Received data:", data)
+            data_decoded = data.decode('utf-8')
+            print("Decoded data:", data_decoded)
 
-            # TODO: Implement parsing of telemetry data. 
+            accel_x = float(data_decoded[data_decoded.find("ACCELX") + 6:data_decoded.find("ACCELY")]) / 1000 * 9.81
+            accel_y = float(data_decoded[data_decoded.find("ACCELY") + 6:data_decoded.find("ACCELZ")]) / 1000 * 9.81
+            accel_z = float(data_decoded[data_decoded.find("ACCELZ") + 6:data_decoded.find("GYROX")]) / 1000 * 9.81
+            gyro_x = float(data_decoded[data_decoded.find("GYROX") + 5:data_decoded.find("GYROY")]) * 180 / 3.14159
+            gyro_y = float(data_decoded[data_decoded.find("GYROY") + 5:data_decoded.find("GYROZ")]) * 180 / 3.14159
+            gyro_z = float(data_decoded[data_decoded.find("GYROZ") + 5:data_decoded.find("TEMP")])
+            temperature = float(data_decoded[data_decoded.find("TEMP") + 4:data_decoded.find("VOLT")])
+            voltage = float(data_decoded[data_decoded.find("VOLT") + 4:data_decoded.find("ALT")])
+            altitude = float(data_decoded[data_decoded.find("ALT") + 3:data_decoded.find("DEND")])
+
+            telemetry_data["altitude"].append(altitude)
+            telemetry_data["accel-x"].append(accel_x)
+            telemetry_data["accel-y"].append(accel_y)
+            telemetry_data["accel-z"].append(accel_z)
+            telemetry_data["gyro-x"].append(gyro_x)
+            telemetry_data["gyro-y"].append(gyro_y)
+            telemetry_data["gyro-z"].append(gyro_z)
+            telemetry_data["temperature"].append(temperature)
+            telemetry_data["voltage"].append(voltage)
             self.telemetry_received = True
         except Exception as err:
             store_telemetry_data()
@@ -132,7 +153,7 @@ def set_flight_mode(mode: int) -> bool:
     # Upon completion of the image processing, the flight mode will be set to 5.
     if processing_image:
         return False
-    if mode == flight_mode:
+    if mode is flight_mode:
         return False
     xbee_radio.write(flight_modes[mode])
     flight_mode = mode
@@ -184,6 +205,10 @@ def run_ground_station() -> None:
     global flight_mode
     global telemetry_data
 
+    def set_flight_mode_0() -> None:
+        set_flight_mode(0)
+    def set_flight_mode_1() -> None:
+        set_flight_mode(1)
     def update_flight_mode_display() -> None:
         label_display_mode.config(text="Flight Mode " + str(flight_mode))
         root.after(1000, update_flight_mode_display)
@@ -218,12 +243,12 @@ def run_ground_station() -> None:
     def request_telemetry() -> None:
         if flight_mode != 1:
             root.after(1000, request_telemetry)
-            pass
-        retrieve_telemetry()
-        graph_altitude_axes.clear()
-        graph_altitude_axes.plot(telemetry_data["altitude"])
-        graph_altitude_canvas.draw()
-        root.after(1000, request_telemetry)
+        else: 
+            retrieve_telemetry()
+            graph_altitude_axes.clear()
+            graph_altitude_axes.plot(telemetry_data["altitude"])
+            graph_altitude_canvas.draw()
+            root.after(1000, request_telemetry)
     root = tkinter.Tk()
     root.title("Ground Station")
     root.geometry("300x200")
@@ -236,9 +261,9 @@ def run_ground_station() -> None:
     label_select_mode = Label(frame, text="Select Flight Mode", font=("Arial", 10, "bold"), fg="red")
     label_select_mode.pack()
 
-    button_mode_0 = tkinter.Button(frame, text="Rover Installation (0)", command=set_flight_mode(0))
+    button_mode_0 = tkinter.Button(frame, text="Rover Installation (0)", command=set_flight_mode_0)
     button_mode_0.pack()
-    button_mode_1 = tkinter.Button(frame, text="Telemetry Transmission (1)", command=set_flight_mode(1))
+    button_mode_1 = tkinter.Button(frame, text="Telemetry Transmission (1)", command=set_flight_mode_1)
     button_mode_1.pack()
     button_mode_2 = tkinter.Button(frame, text="Rover Deployment & Image Capture (2)", command=confirm_eject)
     button_mode_2.pack()
@@ -291,4 +316,5 @@ if __name__ == "__main__":
     # Will only be reached if the user ends the program without properly terminating.
     store_telemetry_data()
     print("Improperly terminated.\nTelemetry stored.\nExiting program.")
+    root.quit()
     exit()
