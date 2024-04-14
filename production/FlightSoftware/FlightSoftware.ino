@@ -25,11 +25,13 @@ uint8_t headFlag = 0;
 unsigned int counter = 0;
 // Image buffer, limited to 255 bytes.
 uint8_t imageBuff[CAMERA_BUFFER_SIZE] = {0};
-
-Arducam_Mega camera(cameraPin);
+// Camera object to capture images.
+Arducam_Mega camera(cameraPin); 
+// Camera initialized.
+bool cameraInitialized = false;
 
 // Time in milliseconds between the request and capture of an image.
-int pictureDelay = 250; 
+int pictureDelay = 250;
 
 // BMP388 sensor object to read temperature, pressure, and altitude.
 BMP388_DEV temp_press_alt_sensor;
@@ -67,7 +69,6 @@ void setup() {
  
     // Initialize the XBee radio to communicate with the ground station.
     xbee_radio.begin(9600);
-    camera.begin();
     // Set the rentention servo pin to output mode.
     pinMode(retentionServoPin, OUTPUT);
     analogWrite(retentionServoPin, map(releasedAngle, 0, 180, 544, 2400) / 8);
@@ -152,6 +153,11 @@ void loop() {
         // Indicate the end of a normal data packet.
         xbee_radio.print("DEND");
     } else if (flightMode == 2) {
+        if (!cameraInitialized) {
+            // Initialize the camera.
+            camera.begin();
+            cameraInitialized = true;
+        }
         // Delay for one second as to allow remaining data to be sent.
         delay(1000);
         
