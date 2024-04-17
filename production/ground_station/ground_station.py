@@ -246,7 +246,7 @@ def run_ground_station() -> None:
         else: 
             retrieve_telemetry()
             graph_altitude_axes.clear()
-            graph_altitude_axes.plot(telemetry_data["altitude"])
+            graph_altitude_axes.plot(telemetry_data["altitude"][1:])
             graph_altitude_canvas.draw()
             root.after(1000, request_telemetry)
     root = tkinter.Tk()
@@ -307,7 +307,7 @@ def store_telemetry_data() -> None:
     file = open("production/resources/telemetry_data.txt", "w")
 
     for key in telemetry_data:
-        file.write(key + ": " + str(telemetry_data[key]) + "\n")
+        file.write(key + ": " + str(telemetry_data[key][1:]) + "\n")
     file.close()
 
 if __name__ == "__main__":
